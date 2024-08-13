@@ -1,0 +1,10 @@
+[package]
+name = "phext-shell"
+version = "0.1.0"
+authors = ["Will Bickford <wbic16@gmail.com>"]
+description = "A rust-native implementation of an operating system shell"
+homepage = "https://phext.io/"
+license = "MIT"
+edition = "2021"
+
+[dependencies]
