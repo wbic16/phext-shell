@@ -1,23 +1,29 @@
-use std::io::Write;
+use std::{fs, io::Write};
 
 use libphext::phext;
 
-#[derive(PartialEq, PartialOrd, Debug, Copy, Clone)]
-struct PhextShellResult
+#[derive(PartialEq, PartialOrd, Debug, Clone)]
+struct PhextShellState
 {
     pub coordinate:phext::Coordinate,
-    pub status:bool
+    pub status:bool,
+    pub phext:String,
+    pub scroll:String
 }
 
 // -----------------------------------------------------------------------------------------------------------
 // @fn main
 // -----------------------------------------------------------------------------------------------------------
-fn main() {    
-    let mut done = false;
-    let mut user_coordinate = phext::to_coordinate("1.1.1/1.1.1/1.1.1");
+fn main() {
+    let mut state:PhextShellState = PhextShellState {
+        coordinate: phext::to_coordinate("1.1.1/1.1.1/1.1.1"),
+        status: false,
+        phext: String::new(),
+        scroll: String::new()
+    };
 
-    while done == false {
-        print!("{} > ", user_coordinate);
+    while state.status == false {
+        print!("{} > ", state.coordinate);
         std::io::stdout().flush().expect("output error");
 
         let mut request = String::new();
@@ -25,30 +31,49 @@ fn main() {
         
         if total == 0 { continue; }
 
-        let result = handle_request(request, user_coordinate);
-        done = result.status;
-        user_coordinate = result.coordinate;
+        handle_request(request, &mut state);
     }
 }
 
 // -----------------------------------------------------------------------------------------------------------
 // @fn handle_request
 // -----------------------------------------------------------------------------------------------------------
-fn handle_request(request: String, incoming_coordinate:phext::Coordinate) -> PhextShellResult {
-    let mut result = PhextShellResult { status: false, coordinate: incoming_coordinate };
+fn handle_request(request: String, state:&mut PhextShellState) {
     let trimmed = request.trim();
+    let mut should_dump_scroll = false;
 
     // exit: terminate the shell session
-    if trimmed.starts_with("exit") {
-        result.status = true;
+    // quit: synonym
+    // :q! because VIM is awesome
+    if trimmed.starts_with("exit") ||
+       trimmed.starts_with("quit") ||
+       trimmed.starts_with(":q!") {
+        state.status = true;
     }
 
     // cs: change scroll
-    if trimmed.starts_with("cs ") {
-        let address = trimmed[2..].to_owned();
-        result.coordinate = phext::to_coordinate(&address);
-        result.status = false;
+    let cs_command = "cs ";
+    if trimmed.starts_with(cs_command) {
+        let address = trimmed[cs_command.len()..].to_owned();
+        state.coordinate = phext::to_coordinate(&address);
+        state.status = false;
+        if state.phext.is_empty() == false {
+            state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+            should_dump_scroll = true;
+        }
     }
 
-    return result;
+    // vex: open phext
+    let vex_command = "vex ";
+    if trimmed.starts_with(vex_command) {
+        let filename = trimmed[vex_command.len()..].to_owned();
+        let error_message = format!("Unable to locate {}", filename);
+        state.phext = fs::read_to_string(filename).expect(error_message.as_str());
+        state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+        println!("{}", phext::textmap(state.phext.as_str()));
+    }
+
+    if should_dump_scroll {
+        println!("{}", state.scroll);
+    }
 }
