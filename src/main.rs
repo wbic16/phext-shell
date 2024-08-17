@@ -37,8 +37,12 @@ fn main() {
         }
     }
 
-    while state.status == false {        
-        print!("{} > ", state.coordinate);
+    while state.status == false {
+        let mut display_coordinate = state.coordinate.to_string();
+        while display_coordinate.starts_with("1.1.1/") {
+            display_coordinate = display_coordinate[6..].to_string();
+        }
+        print!("{} > ", display_coordinate);
         std::io::stdout().flush().expect("output error");
 
         let mut request = String::new();
