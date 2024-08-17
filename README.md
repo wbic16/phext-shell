@@ -6,8 +6,14 @@ phext shell
 
 Commands
 --------
-* vex: load a phext into memory
-* cs: change scroll
+* af: appends the contents of the specified file to the current coordinate
+* cs: Change scroll
+* ds: Display scroll
+* lp: Loads a phext into memory
+* os: overwrites the current scroll with the specified text
+* rp: resets the current phext
+* rs: resets the current scroll
+* sp: saves the current phext to disk
 * help: display online help
 
 Overview

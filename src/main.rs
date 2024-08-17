@@ -22,6 +22,17 @@ fn main() {
         scroll: String::new()
     };
 
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() >= 2 {
+        let command = args[1].clone();        
+        let request = args[1..].join(" ");
+        handle_request(request, &mut state);
+        
+        if command.starts_with("help") {
+            return;
+        }
+    }
+
     while state.status == false {        
         print!("{} > ", state.coordinate);
         std::io::stdout().flush().expect("output error");
@@ -53,6 +64,19 @@ fn handle_request(request: String, state:&mut PhextShellState) {
         handled = true;
     }
 
+    // af: append file to the current coordinate
+    if trimmed.starts_with("af ") && trimmed.len() > 4 {
+        let filename = trimmed[4..].to_owned();
+        let error_message = format!("Unable to locate {}", filename);
+        let content = fs::read_to_string(filename.clone()).expect(error_message.as_str());
+        let update = phext::fetch(state.phext.as_str(), state.coordinate) + content.as_str();
+        state.phext = phext::replace(state.phext.as_str(), state.coordinate, update.as_str());
+        println!("Appended {}", filename);
+        println!("");
+        println!("{}", update.as_str());
+        handled = true;
+    }
+
     // cs: change scroll
     let cs_command = "cs ";
     if trimmed.starts_with(cs_command) {
@@ -66,14 +90,54 @@ fn handle_request(request: String, state:&mut PhextShellState) {
         handled = true;
     }
 
-    // vex: open phext
-    let vex_command = "vex ";
-    if trimmed.starts_with(vex_command) {
-        let filename = trimmed[vex_command.len()..].to_owned();
+    // ds: display scroll
+    if trimmed.starts_with("ds") {
+        state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+        should_dump_scroll = true;
+        handled = true;
+    }
+
+    // lp: open phext
+    let lp_command = "lp ";
+    if trimmed.starts_with(lp_command) && trimmed.len() > lp_command.len() {
+        let filename = trimmed[lp_command.len()..].to_owned();
         let error_message = format!("Unable to locate {}", filename);
         state.phext = fs::read_to_string(filename).expect(error_message.as_str());
         state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
         println!("{}", phext::textmap(state.phext.as_str()));
+        handled = true;
+    }
+
+    // os: overwrite scroll
+    if trimmed.starts_with("os ") && trimmed.len() > 3 {
+        state.phext = phext::replace(state.phext.as_str(), state.coordinate, &trimmed[4..]);
+        state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+        should_dump_scroll = true;
+        handled = true;
+    }
+
+    // rp: deploy the ion cannon and clear the entire phext
+    if trimmed.starts_with("rp") {
+        state.phext = String::new();
+        state.scroll = String::new();
+        should_dump_scroll = true;
+        handled = true;
+    }
+
+    // rs: reset scroll
+    if trimmed.starts_with("rs") {
+        state.phext = phext::replace(state.phext.as_str(), state.coordinate, "");
+        state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+        handled = true;
+    }
+
+    // sp: save phext
+    let sp_command = "sp ";
+    if trimmed.starts_with(sp_command) && trimmed.len() > sp_command.len() {
+        let filename = trimmed[sp_command.len()..].to_owned();
+        let error_message = format!("Unable to locate {}", filename);
+        fs::write(filename.clone(), state.phext.as_bytes()).expect(error_message.as_str());
+        println!("Saved {}.", filename);
         handled = true;
     }
 
@@ -207,8 +271,14 @@ fn show_help(area: &str) {
     println!("");
     println!("Available Commands");
     println!("------------------");
-    println!(" * vex: loads a phext from disk, allowing you to explore it via `cs` commands");
+    println!(" * af: Appends the contents of a File to the current scroll");    
     println!(" * cs: Change Scroll: sets your current coordinate and displays any data found in the current phext");
+    println!(" * ds: Displays the current Scroll");
+    println!(" * lp: loads a phext from disk, allowing you to explore it via `cs` commands");
+    println!(" * rp: Resets the current Phext");
+    println!(" * rs: Resets the current Scroll");
+    println!(" * os: Overwrites the current Scroll with text");
+    println!(" * sp: saves the current phext to disk in the file specified");    
     println!("");
     println!("Concepts");
     println!("--------");

@@ -1,0 +1,9 @@
+commands added in v0.1.4
+------------------------
+
+add: append content
+dsp: display scroll
+svp: save phext
+set: overwrite content
+clr: clear scroll
+ion: clear phext
