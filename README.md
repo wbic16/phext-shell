@@ -20,7 +20,11 @@ Overview
 --------
 This interactive shell is a swiss-army knife designed to make working with phexts simple and fun. The shell displays your current coordinate next to the prompt. Input and output for non-phext-aware programs is collected on the current scroll.
 
-session example
+Hierarchical History
+--------------------
+Upon terminating your phext session, phext-shell will automatically write out a history of actions completed. This history is stored in phext itself, allowing you to track which commands were issued. This allows you to walk/share notes and learn from others in the way they discovered information!
+
+Session Example
 ---------------
 1.1.1/1.1.1/1.1.1> hello-phext<LB>
 

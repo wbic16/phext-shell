@@ -5,10 +5,12 @@ use libphext::phext;
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 struct PhextShellState
 {
+    pub filename:String,
     pub coordinate:phext::Coordinate,
     pub status:bool,
     pub phext:String,
-    pub scroll:String
+    pub scroll:String,
+    pub history:String
 }
 
 // -----------------------------------------------------------------------------------------------------------
@@ -16,10 +18,12 @@ struct PhextShellState
 // -----------------------------------------------------------------------------------------------------------
 fn main() {
     let mut state:PhextShellState = PhextShellState {
+        filename: String::new(),
         coordinate: phext::to_coordinate("1.1.1/1.1.1/1.1.1"),
         status: false,
         phext: String::new(),
-        scroll: String::new()
+        scroll: String::new(),
+        history: String::new()
     };
 
     let args: Vec<String> = std::env::args().collect();
@@ -44,6 +48,10 @@ fn main() {
 
         handle_request(request, &mut state);
     }
+
+    let filename = state.filename + ".history";
+    let error_message = format!("Unable to save session history to {}", filename);
+    fs::write(filename.clone(), state.history.as_bytes()).expect(error_message.as_str());
 }
 
 // -----------------------------------------------------------------------------------------------------------
@@ -53,6 +61,10 @@ fn handle_request(request: String, state:&mut PhextShellState) {
     let trimmed = request.trim();
     let mut should_dump_scroll = false;
     let mut handled = false;
+
+    let prior_history = phext::fetch(state.history.as_str(), state.coordinate);
+    let updated_history = prior_history + "\n" + trimmed;
+    state.history = phext::replace(state.history.as_str(), state.coordinate, updated_history.as_str());
 
     // exit: terminate the shell session
     // quit: synonym
@@ -101,9 +113,9 @@ fn handle_request(request: String, state:&mut PhextShellState) {
     // lp: open phext
     let lp_command = "lp ";
     if trimmed.starts_with(lp_command) && trimmed.len() > lp_command.len() {
-        let filename = trimmed[lp_command.len()..].to_owned();
-        let error_message = format!("Unable to locate {}", filename);
-        state.phext = fs::read_to_string(filename).expect(error_message.as_str());
+        state.filename = trimmed[lp_command.len()..].to_string();
+        let error_message = format!("Unable to locate {}", state.filename.clone());
+        state.phext = fs::read_to_string(state.filename.clone()).expect(error_message.as_str());
         state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
         println!("{}", phext::textmap(state.phext.as_str()));
         handled = true;
