@@ -1,8 +1,8 @@
 [package]
 name = "phext-shell"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Will Bickford <wbic16@gmail.com>"]
-description = "A rust-native implementation of an operating system shell"
+description = "A phext-native implementation of an operating system shell"
 homepage = "https://phext.io/"
 license = "MIT"
 edition = "2021"

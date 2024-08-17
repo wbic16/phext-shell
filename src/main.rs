@@ -65,8 +65,9 @@ fn handle_request(request: String, state:&mut PhextShellState) {
     }
 
     // af: append file to the current coordinate
-    if trimmed.starts_with("af ") && trimmed.len() > 4 {
-        let filename = trimmed[4..].to_owned();
+    let af_command = "af ";
+    if trimmed.starts_with(af_command) && trimmed.len() > af_command.len() {
+        let filename = trimmed[af_command.len()..].to_owned();
         let error_message = format!("Unable to locate {}", filename);
         let content = fs::read_to_string(filename.clone()).expect(error_message.as_str());
         let update = phext::fetch(state.phext.as_str(), state.coordinate) + content.as_str();
@@ -108,9 +109,10 @@ fn handle_request(request: String, state:&mut PhextShellState) {
         handled = true;
     }
 
-    // os: overwrite scroll
-    if trimmed.starts_with("os ") && trimmed.len() > 3 {
-        state.phext = phext::replace(state.phext.as_str(), state.coordinate, &trimmed[4..]);
+    // os: overwrite 
+    let os_command = "os ";
+    if trimmed.starts_with(os_command) && trimmed.len() > os_command.len() {
+        state.phext = phext::replace(state.phext.as_str(), state.coordinate, &trimmed[os_command.len()..]);
         state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
         should_dump_scroll = true;
         handled = true;
