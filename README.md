@@ -3,20 +3,19 @@ phext shell
 * a shell that is phext-aware
 * keeps track of your current scroll by coordinate
 * allows programs to pass hierarchical information between processes
-* 10 operating modes (remaps <ENTER> to apply phext breaks)
-  * allows you to chain outputs in a hierarchical manner
-  * F2 -> Line Break
-  * F3 -> Scroll Break
-  * F4 -> Section Break
-  * F5 -> Chapter Break
-  * F6 -> Book Break
-  * F7 -> Volume Break
-  * F8 -> Collection Break
-  * F9 -> Series Break
-  * F10 -> Shelf Break
-  * F11 -> Library Break
-  * F12 -> Toggle auto-scrolling
 
+Commands
+--------
+* vex: load a phext into memory
+* cs: change scroll
+* help: display online help
+
+Overview
+--------
+This interactive shell is a swiss-army knife designed to make working with phexts simple and fun. The shell displays your current coordinate next to the prompt. Input and output for non-phext-aware programs is collected on the current scroll.
+
+session example
+---------------
 1.1.1/1.1.1/1.1.1> hello-phext<LB>
 
 Result: All output from the `hello-phext` process will be collected on the scroll starting at 2.1.1/1.1.1/1.1.1.
