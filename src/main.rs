@@ -28,10 +28,10 @@ fn main() {
 
     let args: Vec<String> = std::env::args().collect();
     if args.len() >= 2 {
-        let command = args[1].clone();        
+        let command = args[1].clone();
         let request = args[1..].join(" ");
         handle_request(request, &mut state);
-        
+
         if command.starts_with("help") {
             return;
         }
@@ -47,7 +47,7 @@ fn main() {
 
         let mut request = String::new();
         let total = std::io::stdin().read_line(&mut request).expect("Failed to read line");
-        
+
         if total == 0 { continue; }
 
         handle_request(request, &mut state);
@@ -119,13 +119,19 @@ fn handle_request(request: String, state:&mut PhextShellState) {
     if trimmed.starts_with(lp_command) && trimmed.len() > lp_command.len() {
         state.filename = trimmed[lp_command.len()..].to_string();
         let error_message = format!("Unable to locate {}", state.filename.clone());
-        state.phext = fs::read_to_string(state.filename.clone()).expect(error_message.as_str());
-        state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
-        println!("{}", phext::textmap(state.phext.as_str()));
+        if std::path::Path::new(&state.filename).exists() {
+            state.phext = fs::read_to_string(state.filename.clone()).expect(error_message.as_str());
+            state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+            println!("{}", phext::textmap(state.phext.as_str()));
+        } else {
+            println!("No file for {} found. Initializing an empty phext...", state.filename);
+            state.phext = String::new();
+            state.scroll = String::new();
+        }
         handled = true;
     }
 
-    // os: overwrite 
+    // os: overwrite
     let os_command = "os ";
     if trimmed.starts_with(os_command) && trimmed.len() > os_command.len() {
         state.phext = phext::replace(state.phext.as_str(), state.coordinate, &trimmed[os_command.len()..]);
@@ -159,18 +165,33 @@ fn handle_request(request: String, state:&mut PhextShellState) {
         handled = true;
     }
 
-    if handled == false && trimmed.starts_with("help") == false {
-        println!("Error: unknown command '{}'. Displaying built-in help...", trimmed);
-        println!("");
-    }
-
     // help: display hints for the user
-    if trimmed.starts_with("help") || handled == false {
+    if trimmed.starts_with("help") {
         let mut help_request = "";
         if trimmed.len() > 5 {
             help_request = &trimmed[5..];
         }
         show_help(help_request);
+    }
+
+    if handled == false {
+        use std::process::Command;
+        println!("Executing '{}'...", trimmed);
+        let trimmed = format!("{} ", trimmed); // ensure we have at least an empty set of args
+        if let Some ((program, args)) = trimmed.split_once(' ') {
+            let output = Command::new(program)
+                    .arg(args)
+                    .output()
+                    .expect("failed to execute process");
+
+            let program_output = String::from_utf8_lossy(&output.stdout).to_string();
+            state.phext = phext::replace(state.phext.as_str(), state.coordinate, program_output.as_str());
+            state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+            println!("Collected {} bytes into {}", program_output.len(), state.coordinate);
+            if output.stderr.len() > 0 {
+                println!("Error: {}", String::from_utf8_lossy(&output.stderr));
+            }
+        }
     }
 
     if should_dump_scroll {
@@ -199,7 +220,7 @@ fn show_help(area: &str) {
         println!("example: `cs 50.14.88/25.23.17/8.6.4`");
         println!("");
         println!("The cs command instructs phext-shell to navigate to the specified coordinate.");
-        println!("If you are currently vexing a phext, the scroll at your request coordinate will be displayed.");        
+        println!("If you are currently vexing a phext, the scroll at your request coordinate will be displayed.");
         return;
     }
 
@@ -289,14 +310,14 @@ fn show_help(area: &str) {
     println!("");
     println!("Available Commands");
     println!("------------------");
-    println!(" * af: Appends the contents of a File to the current scroll");    
+    println!(" * af: Appends the contents of a File to the current scroll");
     println!(" * cs: Change Scroll: sets your current coordinate and displays any data found in the current phext");
     println!(" * ds: Displays the current Scroll");
     println!(" * lp: loads a phext from disk, allowing you to explore it via `cs` commands");
     println!(" * rp: Resets the current Phext");
     println!(" * rs: Resets the current Scroll");
     println!(" * os: Overwrites the current Scroll with text");
-    println!(" * sp: saves the current phext to disk in the file specified");    
+    println!(" * sp: saves the current phext to disk in the file specified");
     println!("");
     println!("Concepts");
     println!("--------");
