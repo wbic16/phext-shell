@@ -169,6 +169,17 @@ fn handle_request(request: String, state:&mut PhextShellState) {
         handled = true;
     }
 
+    // hp: hash phext
+    if trimmed == "hp" {
+        let manifest = phext::manifest(state.phext.as_str());
+        let filename = state.filename.clone() + ".checksum";
+        let error_message = format!("Unable to locate {}", filename);
+        fs::write(filename.clone(), manifest.as_bytes()).expect(error_message.as_str());
+        let checksum = phext::checksum(manifest.as_str());
+        println!("Checksum: {} ({}).", checksum, filename);
+        handled = true;
+    }
+
     // help: display hints for the user
     if trimmed.starts_with("help") {
         let mut help_request = "";
@@ -210,7 +221,7 @@ fn show_help(area: &str) {
     let lowercase = area.to_ascii_lowercase();
     let area = lowercase.as_str();
 
-    if area.starts_with("vex") {
+    if area.starts_with("lp") {
         println!("summary: vex parses a phext from your local file system.");
         println!("example: `vex <file>`");
         println!("");
@@ -317,11 +328,12 @@ fn show_help(area: &str) {
     println!(" * af: Appends the contents of a File to the current scroll");
     println!(" * cs: Change Scroll: sets your current coordinate and displays any data found in the current phext");
     println!(" * ds: Displays the current Scroll");
+    println!(" * hp: computes the xxh3-based manifest of your phext");
     println!(" * lp: loads a phext from disk, allowing you to explore it via `cs` commands");
     println!(" * rp: Resets the current Phext");
     println!(" * rs: Resets the current Scroll");
     println!(" * os: Overwrites the current Scroll with text");
-    println!(" * sp: saves the current phext to disk in the file specified");
+    println!(" * sp: saves the current phext to disk in the file specified");    
     println!("");
     println!("Concepts");
     println!("--------");
