@@ -106,6 +106,10 @@ fn handle_request(request: String, state:&mut PhextShellState) {
         }
         handled = true;
     }
+    if trimmed == "cs" {
+        println!("Location: {}", state.coordinate);
+        handled = true;
+    }
 
     // ds: display scroll
     if trimmed.starts_with("ds") {
