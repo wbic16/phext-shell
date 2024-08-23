@@ -11,6 +11,7 @@ Commands
 * ds: Display scroll
 * lp: Loads a phext into memory
 * os: overwrites the current scroll with the specified text
+* pi: indexes the current phext
 * rp: resets the current phext
 * rs: resets the current scroll
 * sp: saves the current phext to disk

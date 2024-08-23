@@ -1,5 +1,4 @@
 use std::{fs, io::Write};
-
 use libphext::phext;
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
@@ -115,6 +114,16 @@ fn handle_request(request: String, state:&mut PhextShellState) {
     if trimmed.starts_with("ds") {
         state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
         should_dump_scroll = true;
+        handled = true;
+    }
+
+    // pi: phext index
+    if trimmed == "pi" {
+        let index = phext::index(state.phext.as_str());
+        println!("{}", phext::textmap(index.as_str()));
+        let filename = state.filename.clone() + ".index";
+        let error_message = format!("Unable to locate {}", filename);
+        fs::write(filename.clone(), index.as_bytes()).expect(error_message.as_str());
         handled = true;
     }
 
