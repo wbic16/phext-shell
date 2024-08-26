@@ -208,6 +208,7 @@ fn handle_request(request: String, state:&mut PhextShellState) {
             help_request = &trimmed[5..];
         }
         show_help(help_request);
+        handled = true;
     }
 
     if handled == false {
@@ -349,12 +350,14 @@ fn show_help(area: &str) {
     println!(" * af: Appends the contents of a File to the current scroll");
     println!(" * cs: Change Scroll: sets your current coordinate and displays any data found in the current phext");
     println!(" * ds: Displays the current Scroll");
-    println!(" * hp: computes the xxh3-based manifest of your phext");
     println!(" * lp: loads a phext from disk, allowing you to explore it via `cs` commands");
     println!(" * rp: Resets the current Phext");
     println!(" * rs: Resets the current Scroll");
     println!(" * os: Overwrites the current Scroll with text");
-    println!(" * sp: saves the current phext to disk in the file specified");    
+    println!(" * ph: computes the xxh3-based manifest of your phext");
+    println!(" * pi: computes the index of your phext");
+    println!(" * ps: computes the soundex of your phext");
+    println!(" * sp: saves the current phext to disk in the file specified");
     println!("");
     println!("Concepts");
     println!("--------");
