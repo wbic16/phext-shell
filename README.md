@@ -11,7 +11,9 @@ Commands
 * ds: Display scroll
 * lp: Loads a phext into memory
 * os: overwrites the current scroll with the specified text
+* ph: computes the phext checksum
 * pi: indexes the current phext
+* ps: soundex for the current phext
 * rp: resets the current phext
 * rs: resets the current scroll
 * sp: saves the current phext to disk
@@ -24,6 +26,19 @@ This interactive shell is a swiss-army knife designed to make working with phext
 Hierarchical History
 --------------------
 Upon terminating your phext session, phext-shell will automatically write out a history of actions completed. This history is stored in phext itself, allowing you to track which commands were issued. This allows you to walk/share notes and learn from others in the way they discovered information!
+
+Thinking in Terms of Phexts
+---------------------------
+Several commands provide SIMD-style output (producing a child phext document with the same structure, but new data). You can inspect the corresponding document in any phext-capable editor.
+
+* ph: phext hash
+  * runs xxh3 on every scroll, computes a manifest, and spits out a hash for the entire phext
+  * related suffix: .checksum
+* pi: phext index
+  * calculates the absolute offset of each scroll, including necessary delimiters
+  * related suffix: .index
+* ps: phext soundex
+  * similar to the phext hash, but designed to produce numbers suitable for use as coordinates
 
 Session Example
 ---------------

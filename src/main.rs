@@ -72,12 +72,13 @@ fn handle_request(request: String, state:&mut PhextShellState) {
     // exit: terminate the shell session
     // quit: synonym
     // :q! because VIM is awesome
+    // (TODO) Ctrl-z: thanks, python
     if trimmed.starts_with("exit") ||
        trimmed.starts_with("quit") ||
        trimmed.starts_with(":q!") {
         state.status = true;
         handled = true;
-    }
+    }   
 
     // af: append file to the current coordinate
     let af_command = "af ";
@@ -124,6 +125,28 @@ fn handle_request(request: String, state:&mut PhextShellState) {
         let filename = state.filename.clone() + ".index";
         let error_message = format!("Unable to locate {}", filename);
         fs::write(filename.clone(), index.as_bytes()).expect(error_message.as_str());
+        handled = true;
+    }
+
+     // ps: phext soundex
+     let ps_command = "ps";
+     if trimmed == ps_command {         
+        let soundex = phext::soundex_v1(state.phext.as_str());
+        println!("{}", phext::textmap(soundex.as_str()));
+        let filename = state.filename.clone() + ".soundex";
+        let error_message = format!("Unable to locate {}", filename);
+        fs::write(filename.clone(), soundex.as_bytes()).expect(error_message.as_str());
+        handled = true;
+    }
+
+    // ph: phext hash
+    if trimmed == "ph" {
+        let manifest = phext::manifest(state.phext.as_str());
+        let filename = state.filename.clone() + ".checksum";
+        let error_message = format!("Unable to locate {}", filename);
+        fs::write(filename.clone(), manifest.as_bytes()).expect(error_message.as_str());
+        let checksum = phext::checksum(manifest.as_str());
+        println!("Checksum: {} ({}).", checksum, filename);
         handled = true;
     }
 
@@ -176,18 +199,7 @@ fn handle_request(request: String, state:&mut PhextShellState) {
         fs::write(filename.clone(), state.phext.as_bytes()).expect(error_message.as_str());
         println!("Saved {}.", filename);
         handled = true;
-    }
-
-    // hp: hash phext
-    if trimmed == "hp" {
-        let manifest = phext::manifest(state.phext.as_str());
-        let filename = state.filename.clone() + ".checksum";
-        let error_message = format!("Unable to locate {}", filename);
-        fs::write(filename.clone(), manifest.as_bytes()).expect(error_message.as_str());
-        let checksum = phext::checksum(manifest.as_str());
-        println!("Checksum: {} ({}).", checksum, filename);
-        handled = true;
-    }
+    }    
 
     // help: display hints for the user
     if trimmed.starts_with("help") {

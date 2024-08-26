@@ -1,8 +1,6 @@
 
 lp world-sample.phext
-cs 1.1.1/1.1.1/1.1.4
-help
-os phext-shell is a phext-aware cli interface to phext!
-ds
+ph
 pi
+ps
 quit
