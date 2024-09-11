@@ -2,3 +2,5 @@ target/*
 Cargo.lock
 *.history
 sample.phext
+result
+result/*
