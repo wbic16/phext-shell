@@ -62,171 +62,184 @@ fn main() {
 // -----------------------------------------------------------------------------------------------------------
 fn handle_request(request: String, state:&mut PhextShellState) {
     let trimmed = request.trim();
+    let (command, args) = trimmed.split_once(' ').unwrap_or((trimmed, ""));
+    
     let mut should_dump_scroll = false;
-    let mut handled = false;
 
     let prior_history = phext::fetch(state.history.as_str(), state.coordinate);
     let updated_history = prior_history + "\n" + trimmed;
     state.history = phext::replace(state.history.as_str(), state.coordinate, updated_history.as_str());
 
-    // exit: terminate the shell session
-    // quit: synonym
-    // :q! because VIM is awesome
-    // (TODO) Ctrl-z: thanks, python
-    if trimmed.starts_with("exit") ||
-       trimmed.starts_with("quit") ||
-       trimmed.starts_with(":q!") {
-        state.status = true;
-        handled = true;
-    }   
+    match command {
+        // exit: terminate the shell session
+        // quit: synonym
+        // :q! because VIM is awesome
+        // (TODO) Ctrl-z: thanks, python
+        "exit" | "quit" | ":q!" => state.status = true,
 
-    // af: append file to the current coordinate
-    let af_command = "af ";
-    if trimmed.starts_with(af_command) && trimmed.len() > af_command.len() {
-        let filename = trimmed[af_command.len()..].to_owned();
-        let error_message = format!("Unable to locate {}", filename);
-        let content = fs::read_to_string(filename.clone()).expect(error_message.as_str());
-        let update = phext::fetch(state.phext.as_str(), state.coordinate) + content.as_str();
-        state.phext = phext::replace(state.phext.as_str(), state.coordinate, update.as_str());
-        println!("Appended {}", filename);
-        println!("");
-        println!("{}", update.as_str());
-        handled = true;
-    }
+        // af: append file to the current coordinate
+        "af" => {
+            if args.len() < 1 {
+                println!("Expected 1 argument");
+            } else {
+                let filename = args;
+                match fs::read_to_string(filename) {
+                    Ok(content) => {
+                        let update = phext::fetch(state.phext.as_str(), state.coordinate) + content.as_str();
+                        state.phext = phext::replace(state.phext.as_str(), state.coordinate, update.as_str());
+                        println!("Appended {}", filename);
+                        println!("");
+                        println!("{}", update.as_str());
+                    },
+                    Err(e) => println!("Error reading file '{}': {}", filename, e)
+                }
+            }
+        },
 
-    // cs: change scroll
-    let cs_command = "cs ";
-    if trimmed.starts_with(cs_command) {
-        let address = trimmed[cs_command.len()..].to_owned();
-        state.coordinate = phext::to_coordinate(&address);
-        state.status = false;
-        if state.phext.is_empty() == false {
+        // cs: change scroll
+        "cs" => {
+            if args.len() < 1 {
+                println!("Location: {}", state.coordinate);
+            }
+            else {
+                let address = args;
+                state.coordinate = phext::to_coordinate(&address);
+                state.status = false;
+                if state.phext.is_empty() == false {
+                    state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+                    should_dump_scroll = true;
+                }
+            }
+
+        },
+
+        // ds: display scroll
+        "ds" => {
+            state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+            should_dump_scroll = true;
+        },
+
+        // pi: phext index
+        "pi" => {
+            let index = phext::index(state.phext.as_str());
+            println!("{}", phext::textmap(index.as_str()));
+            let filename = state.filename.clone() + ".index";
+            match fs::write(filename.clone(), index.as_bytes()) {
+                Ok(()) => (),
+                Err(e) => println!("Unable to locate {}: {}", filename, e)
+            }
+        },
+        
+        // ps: phext soundex
+        "ps" => {
+            let soundex = phext::soundex_v1(state.phext.as_str());
+            println!("{}", phext::textmap(soundex.as_str()));
+            let filename = state.filename.clone() + ".soundex";
+            match fs::write(filename.clone(), soundex.as_bytes()) {
+                Ok(()) => (),
+                Err(e) => println!("Unable to locate {}: {}", filename, e)
+            }
+        },
+        
+        // ph: phext hash
+        "ph" => {
+            let manifest = phext::manifest(state.phext.as_str());
+            let filename = state.filename.clone() + ".checksum";
+
+            match fs::write(filename.clone(), manifest.as_bytes()) {
+                Ok(()) => (),
+                Err(e) => println!("Unable to locate {}: {}", filename, e)
+            }
+
+            let checksum = phext::checksum(manifest.as_str());
+            println!("Checksum: {} ({}).", checksum, filename);
+        },
+
+        // lp: open phext
+        "lp" => {
+            if args.len() < 1 {
+                println!("Location: {}", state.coordinate);
+            }
+            else {
+                state.filename = args.to_string();
+                if std::path::Path::new(&state.filename).exists() {
+                    match fs::read_to_string(state.filename.clone()) {
+                        Ok(content) => {
+                            state.phext = content;
+                            state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+                            println!("{}", phext::textmap(state.phext.as_str()));
+                        },
+                        Err(e) => println!("Unable to locate {}: {}", state.filename, e)
+                    }
+                } else {
+                        println!("No file for {} found. Initializing an empty phext...", state.filename);
+                        state.phext = String::new();
+                        state.scroll = String::new();
+                }
+            }
+        },
+
+
+        // os: overwrite
+        // if no text is provided, should default behavior be reset scroll?
+        "os" => {
+            if trimmed.len() > 3 {
+                state.phext = phext::replace(state.phext.as_str(), state.coordinate, &trimmed[3..]);
+            } else {
+                state.phext = phext::replace(state.phext.as_str(), state.coordinate, "");
+            }
             state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
             should_dump_scroll = true;
         }
-        handled = true;
-    }
-    if trimmed == "cs" {
-        println!("Location: {}", state.coordinate);
-        handled = true;
-    }
 
-    // ds: display scroll
-    if trimmed.starts_with("ds") {
-        state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
-        should_dump_scroll = true;
-        handled = true;
-    }
-
-    // pi: phext index
-    if trimmed == "pi" {
-        let index = phext::index(state.phext.as_str());
-        println!("{}", phext::textmap(index.as_str()));
-        let filename = state.filename.clone() + ".index";
-        let error_message = format!("Unable to locate {}", filename);
-        fs::write(filename.clone(), index.as_bytes()).expect(error_message.as_str());
-        handled = true;
-    }
-
-     // ps: phext soundex
-     let ps_command = "ps";
-     if trimmed == ps_command {         
-        let soundex = phext::soundex_v1(state.phext.as_str());
-        println!("{}", phext::textmap(soundex.as_str()));
-        let filename = state.filename.clone() + ".soundex";
-        let error_message = format!("Unable to locate {}", filename);
-        fs::write(filename.clone(), soundex.as_bytes()).expect(error_message.as_str());
-        handled = true;
-    }
-
-    // ph: phext hash
-    if trimmed == "ph" {
-        let manifest = phext::manifest(state.phext.as_str());
-        let filename = state.filename.clone() + ".checksum";
-        let error_message = format!("Unable to locate {}", filename);
-        fs::write(filename.clone(), manifest.as_bytes()).expect(error_message.as_str());
-        let checksum = phext::checksum(manifest.as_str());
-        println!("Checksum: {} ({}).", checksum, filename);
-        handled = true;
-    }
-
-    // lp: open phext
-    let lp_command = "lp ";
-    if trimmed.starts_with(lp_command) && trimmed.len() > lp_command.len() {
-        state.filename = trimmed[lp_command.len()..].to_string();
-        let error_message = format!("Unable to locate {}", state.filename.clone());
-        if std::path::Path::new(&state.filename).exists() {
-            state.phext = fs::read_to_string(state.filename.clone()).expect(error_message.as_str());
-            state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
-            println!("{}", phext::textmap(state.phext.as_str()));
-        } else {
-            println!("No file for {} found. Initializing an empty phext...", state.filename);
+        // rp: deploy the ion cannon and clear the entire phext
+        "rp" => {
             state.phext = String::new();
             state.scroll = String::new();
-        }
-        handled = true;
-    }
-
-    // os: overwrite
-    let os_command = "os ";
-    if trimmed.starts_with(os_command) && trimmed.len() > os_command.len() {
-        state.phext = phext::replace(state.phext.as_str(), state.coordinate, &trimmed[os_command.len()..]);
-        state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
-        should_dump_scroll = true;
-        handled = true;
-    }
-
-    // rp: deploy the ion cannon and clear the entire phext
-    if trimmed.starts_with("rp") {
-        state.phext = String::new();
-        state.scroll = String::new();
-        should_dump_scroll = true;
-        handled = true;
-    }
-
-    // rs: reset scroll
-    if trimmed.starts_with("rs") {
-        state.phext = phext::replace(state.phext.as_str(), state.coordinate, "");
-        state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
-        handled = true;
-    }
-
-    // sp: save phext
-    let sp_command = "sp ";
-    if trimmed.starts_with(sp_command) && trimmed.len() > sp_command.len() {
-        let filename = trimmed[sp_command.len()..].to_owned();
-        let error_message = format!("Unable to locate {}", filename);
-        fs::write(filename.clone(), state.phext.as_bytes()).expect(error_message.as_str());
-        println!("Saved {}.", filename);
-        handled = true;
-    }    
-
-    // help: display hints for the user
-    if trimmed.starts_with("help") {
-        let mut help_request = "";
-        if trimmed.len() > 5 {
-            help_request = &trimmed[5..];
-        }
-        show_help(help_request);
-        handled = true;
-    }
-
-    if handled == false {
-        use std::process::Command;
-        println!("Executing '{}'...", trimmed);
-        let trimmed = format!("{} ", trimmed); // ensure we have at least an empty set of args
-        if let Some ((program, args)) = trimmed.split_once(' ') {
-            let output = Command::new(program)
-                    .arg(args)
-                    .output()
-                    .expect("failed to execute process");
-
-            let program_output = String::from_utf8_lossy(&output.stdout).to_string();
-            state.phext = phext::replace(state.phext.as_str(), state.coordinate, program_output.as_str());
+            should_dump_scroll = true;
+        },
+    
+        // rs: reset scroll
+        "rs" => {
+            state.phext = phext::replace(state.phext.as_str(), state.coordinate, "");
             state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
-            println!("Collected {} bytes into {}", program_output.len(), state.coordinate);
-            if output.stderr.len() > 0 {
-                println!("Error: {}", String::from_utf8_lossy(&output.stderr));
+            should_dump_scroll = true;
+        },
+
+        // sp: save phext
+        "sp" => {
+            if args.len() < 1 {
+                println!("Expected 1 argument");
+            } else {
+                let filename = args;
+                match fs::write(filename, state.phext.as_bytes()) {
+                    Ok(()) => println!("Saved {}.", filename),
+                    Err(e) => println!("Unable to locate {}: {}", filename, e)
+                }
+            }
+        },
+        
+        // help: display hints for the user
+        "help" => {
+            show_help(args);
+        },
+        
+        _ => {
+            use std::process::Command;
+            println!("Executing '{}'...", trimmed);
+            match Command::new(command)
+                .args(args.split_whitespace())
+                .output() {
+                Ok(output) => {
+                    let program_output = String::from_utf8_lossy(&output.stdout).to_string();
+                    state.phext = phext::replace(state.phext.as_str(), state.coordinate, program_output.as_str());
+                    state.scroll = phext::fetch(state.phext.as_str(), state.coordinate);
+                    println!("Collected {} bytes into {}", program_output.len(), state.coordinate);
+                    if output.stderr.len() > 0 {
+                        println!("Error: {}", String::from_utf8_lossy(&output.stderr));
+                    }
+                },
+                Err(e) => println!("Failed to execute process: {}", e)
             }
         }
     }
