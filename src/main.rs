@@ -224,7 +224,7 @@ fn handle_request(request: String, state:&mut PhextShellState) {
             show_help(args);
         },
         
-        "run" => {
+        "ex" => {
             let (run_command, run_args) = args.split_once(' ').unwrap_or((args, ""));
             println!("Executing '{}'...", args);
 
@@ -377,6 +377,7 @@ fn show_help(area: &str) {
     println!(" * pi: computes the index of your phext");
     println!(" * ps: computes the soundex of your phext");
     println!(" * sp: saves the current phext to disk in the file specified");
+    println!(" * ex: executes program and saves output to current scroll");
     println!("");
     println!("Concepts");
     println!("--------");
