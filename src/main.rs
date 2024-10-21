@@ -224,11 +224,13 @@ fn handle_request(request: String, state:&mut PhextShellState) {
             show_help(args);
         },
         
-        _ => {
+        "ex" => {
+            let (run_command, run_args) = args.split_once(' ').unwrap_or((args, ""));
+            println!("Executing '{}'...", args);
+
             use std::process::Command;
-            println!("Executing '{}'...", trimmed);
-            match Command::new(command)
-                .args(args.split_whitespace())
+            match Command::new(run_command)
+                .args(run_args.split_whitespace())
                 .output() {
                 Ok(output) => {
                     let program_output = String::from_utf8_lossy(&output.stdout).to_string();
@@ -241,6 +243,10 @@ fn handle_request(request: String, state:&mut PhextShellState) {
                 },
                 Err(e) => println!("Failed to execute process: {}", e)
             }
+        }
+
+        _ => {
+            println!("Unknown command '{}'", command);
         }
     }
 
@@ -371,6 +377,7 @@ fn show_help(area: &str) {
     println!(" * pi: computes the index of your phext");
     println!(" * ps: computes the soundex of your phext");
     println!(" * sp: saves the current phext to disk in the file specified");
+    println!(" * ex: executes program and saves output to current scroll");
     println!("");
     println!("Concepts");
     println!("--------");
