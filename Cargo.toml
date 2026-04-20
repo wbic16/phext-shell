@@ -4,6 +4,7 @@ version = "0.1.13"
 authors = ["Will Bickford <wbic16@gmail.com>"]
 description = "A phext-native implementation of an operating system shell"
 homepage = "https://phext.io/"
+repository = "https://github.com/wbic16/phext-shell/"
 license = "MIT"
 edition = "2021"
 
