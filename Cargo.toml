@@ -8,4 +8,5 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
-libphext = "0.1.9"
+libphext = "0.6.0"[patch.crates-io]
+libphext = { path = "/home/wbic16/chain-playground/libphext-v060" }
