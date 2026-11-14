@@ -47,7 +47,12 @@ fn main() {
         let mut request = String::new();
         let total = std::io::stdin().read_line(&mut request).expect("Failed to read line");
 
-        if total == 0 { continue; }
+        // EOF on stdin ends the session (Ctrl-D, or a closed pipe):
+        // read_line returns 0 at EOF, so without this break a scripted
+        // session that ends without `exit` spins forever, flooding
+        // stdout with prompts. Breaking lands in the history write
+        // below, exactly as an explicit `exit` does.
+        if total == 0 { break; }
 
         handle_request(request, &mut state);
     }
