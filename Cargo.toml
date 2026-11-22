@@ -8,4 +8,4 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
-libphext = "0.6.0"
+libphext = "0.6.6"
